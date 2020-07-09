@@ -58942,7 +58942,7 @@
     const NATIVE_META_TX_URL = config.nativeMetaTxUrl;
 
     let decoderMap = {}, smartContractMap = {};
-    let dsaABI = [{"inputs":[{"internalType":"address[]","name":"_targets","type":"address[]"},{"internalType":"bytes[]","name":"_datas","type":"bytes[]"},{"internalType":"address","name":"_origin","type":"address"}],"name":"cast","outputs":[],"stateMutability":"payable","type":"function"}];
+    let dsaABI = [{"inputs":[{"internalType":"address[]","name":"_targets","type":"address[]"},{"internalType":"bytes[]","name":"_datas","type":"bytes[]"},{"internalType":"address","name":"_origin","type":"address"}],"name":"cast","outputs":[],"stateMutability":"payable","type":"function"}, {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"}, {"inputs":[{"internalType":"address","name":"_owner","type":"address"},{"internalType":"uint256","name":"accountVersion","type":"uint256"},{"internalType":"address","name":"_origin","type":"address"}],"name":"build","outputs":[{"internalType":"address","name":"_account","type":"address"}],"stateMutability":"nonpayable","type":"function"}, {"inputs":[{"internalType":"address","name":"_owner","type":"address"},{"internalType":"uint256","name":"accountVersion","type":"uint256"},{"internalType":"address[]","name":"_targets","type":"address[]"},{"internalType":"bytes[]","name":"_datas","type":"bytes[]"},{"internalType":"address","name":"_origin","type":"address"}],"name":"buildWithCast","outputs":[{"internalType":"address","name":"_account","type":"address"}],"stateMutability":"payable","type":"function"}];
     let web3;
     const events = require('events');
     var eventEmitter = new events.EventEmitter();
@@ -59523,16 +59523,19 @@
 
           // Check if transaction is sent to DSA Address
           // if(false) {
-          if( to == engine.dsaAddress.toLowerCase()) {
+          if(engine.dsaAddress && to == engine.dsaAddress.toLowerCase()) {
             _logMessage("DSA Transaction intercepted");
             let compoundAddress = "0xaecfa2c0f4bad0ecee46dcd1250cd0334fe28bc0";
-            let makerDaoAddress = "0x58bbb677296b6d1b596288b31abb928492400fbf";
+            //let makerDaoAddress = "0x58bbb677296b6d1b596288b31abb928492400fbf";
+            let aaveAddress = "0x3fd79e82ccac22a1c1b504e8a04bec133cb3f282";
             let dsaTargetAddresses = methodInfo.params[0].value;
             if(dsaTargetAddresses && dsaTargetAddresses.length == 2) {
               let firstAddress = dsaTargetAddresses[0];
               let secondAddress = dsaTargetAddresses[1];
-              if((firstAddress == compoundAddress && secondAddress == makerDaoAddress) ||
-                (firstAddress == makerDaoAddress && secondAddress == compoundAddress)) {
+              console.log(firstAddress);
+              console.log(secondAddress);
+              if((firstAddress == compoundAddress && secondAddress == aaveAddress) ||
+                (firstAddress == aaveAddress && secondAddress == compoundAddress)) {
                   _logMessage("Toggle transaction found");
                   if(engine.forwarderContract) {
                     // Same as the gnosis address registered on the dashboard

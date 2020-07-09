@@ -13,10 +13,18 @@ App  = {
         //var kovanAdd = "0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa"
         App.db = openDatabase('smartbot', '1.0', 'my first database', 4 * 1024 * 1024);
         await App.setupKovan();
-        await App.getAccounts();
-        await App.interest();
-        await App.upperDashboard();
-        return App.bindEvents();
+        await App.setupAaveTokenAddress();
+        // await App.compoundSupply();
+        // await App.aaveSupply();
+        App.interest();
+        App.bindEvents();
+        await dsa.getAccounts(window.ethereum.selectedAddress)
+            .then(async function(data){
+                if(data.length!=0){
+                    await App.getAccounts();
+                    await App.upperDashboard();
+                }
+            })
     },
 
     setupKovan: function() {
@@ -33,10 +41,52 @@ App  = {
         dsa.tokens.info.cbat.address = "0xd5ff020f970462816fdd31a603cb7d120e48376e"
     },
 
+    setupAaveTokenAddress: function() {
+        // Setting aave kovan token addresses
+        dsa.tokens.info.eth.address = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+        dsa.tokens.info.dai.address = "0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD"
+        dsa.tokens.info.usdc.address = "0xe22da380ee6B445bb8273C81944ADEB6E8450422"
+        dsa.tokens.info.usdt.address = "0x13512979ADE267AB5100878E2e0f485B568328a4"
+        dsa.tokens.info.wbtc.address = "0x3b92f58feD223E2cB1bCe4c286BD97e42f2A12EA"
+        dsa.tokens.info.zrx.address = "0xD0d76886cF8D952ca26177EB7CfDf83bad08C00C"
+        dsa.tokens.info.rep.address = "0x260071C8D61DAf730758f8BD0d6370353956AE0E"
+        dsa.tokens.info.bat.address = "0x2d12186Fbb9f9a8C28B3FfdD4c42920f8539D738"
+        dsa.tokens.info.susd.address = "0xD868790F57B39C9B2B51b12de046975f986675f9"
+        dsa.tokens.info.tusd.address = "0x1c4a937d171752e1313D70fb16Ae2ea02f86303e"
+        dsa.tokens.info.busd.address = "0x4c6E1EFC12FDfD568186b7BAEc0A43fFfb4bCcCf"
+        dsa.tokens.info.knc.address = "0x3F80c39c0b96A0945f9F0E9f55d8A8891c5671A8"
+        dsa.tokens.info.lend.address = "0x1BCe8A0757B7315b74bA1C7A731197295ca4747a"
+        dsa.tokens.info.link.address = "0xAD5ce863aE3E4E9394Ab43d4ba0D80f419F61789"
+        dsa.tokens.info.mana.address = "0x738Dc6380157429e957d223e6333Dc385c85Fec7"
+        dsa.tokens.info.mkr.address = "0x61e4CAE3DA7FD189e52a4879C7B8067D7C2Cc0FA"
+        dsa.tokens.info.snx.address = "0x7FDb81B0b8a010dd4FFc57C3fecbf145BA8Bd947"
+    
+        // setting atokens addresses on kovan
+        dsa.tokens.info.aeth.address = "0xD483B49F2d55D2c53D32bE6efF735cB001880F79"
+        dsa.tokens.info.adai.address = "0x58AD4cB396411B691A9AAb6F74545b2C5217FE6a"
+        dsa.tokens.info.ausdc.address = "0x02F626c6ccb6D2ebC071c068DC1f02Bf5693416a"
+        dsa.tokens.info.ausdt.address = "0xA01bA9fB493b851F4Ac5093A324CB081A909C34B"
+        dsa.tokens.info.awbtc.address = "0xCD5C52C7B30468D16771193C47eAFF43EFc47f5C"
+        
+        dsa.tokens.info.azrx.address = "0x0F456900c6bdFddfA27E1E4E4c84EB823a2eE13c"
+        dsa.tokens.info.arep.address = "0x0578469469Db1129271f4eb3EB9D97426506c44c"
+        dsa.tokens.info.abat.address = "0x5ad67de6Fb697e92a7dE99d991F7CdB77EdF5F74"
+    
+        // deleting few atokens
+        delete dsa.tokens.info.asusd
+        delete dsa.tokens.info.atusd
+        delete dsa.tokens.info.abusd
+        delete dsa.tokens.info.aknc     
+        delete dsa.tokens.info.alend
+        delete dsa.tokens.info.alink
+        delete dsa.tokens.info.amana
+        delete dsa.tokens.info.amkr     
+        delete dsa.tokens.info.asnx 
+    },
+
     getAccounts: async function(){
         await dsa.getAccounts(window.ethereum.selectedAddress)
             .then(async function(data){
-                console.log(data.length);
                 if(data.length != 0){
                     await dsa.setInstance(data[0].id);
                     App.id = data[0].id;
@@ -49,7 +99,7 @@ App  = {
                     App.db.transaction(function (tx) {
                         tx.executeSql('CREATE TABLE IF NOT EXISTS allAccounts (id unique, pAmt, ETH, DAI)');
                         tx.executeSql('INSERT INTO allAccounts (id , pAmt, ETH, DAI) VALUES (' +App.id+ ', 0, 0, 0)');
-                        tx.executeSql('CREATE TABLE IF NOT EXISTS `' + App.id + '` (text, time)');
+                        tx.executeSql('CREATE TABLE IF NOT EXISTS `' + App.id + '` (text, time, hash)');
                     });
                     await dsa.compound.getPosition(data[0].address)
                         .then(function(data){
@@ -69,7 +119,7 @@ App  = {
         $(document).on('click', '#deposit', App.deposit);
         $(document).on('click', '#withdraw', App.withdraw);
         //$(document).on('click', '#trade', App.toggle);
-        //$(document).on('click', '#userAllowance', App.userAllowance);
+        //$(document).on('click', '#allowance', App.userAllowance);
         //$(document).on('click', '#Authority', App.authority);
     },
 
@@ -103,26 +153,61 @@ App  = {
                 App.pamount = results.rows.item(0).pAmt;
             });
         });
+        $("#all-logs").empty();
+        App.db.transaction(function (tx) {
+            tx.executeSql('SELECT * FROM `'+App.id+'`;', [], function (tx, results) {
+                var logrow = $('#all-logs');
+                var len = results.rows.length, i;
+                console.log(results);
+                for (i = 0; i < len; i++) {
+                    var logTemplate = $('#template');
+                    console.log(results.rows.item(i).text)
+                    logTemplate.find('#text').text(results.rows.item(i).text);
+                    logTemplate.find('#hash').text(results.rows.item(i).hash);
+                    logTemplate.find('#time').text(results.rows.item(i).time);
+                    logrow.append(logTemplate.html());
+                }
+                
+            });
+        });
         await dsa.getAccounts(window.ethereum.selectedAddress)
             .then(async function(data){
                 if(App.isIncompound==true){
+                    $('#mpercent').text("0%");
+                    if(App.pamount>0){
+                        $('#cpercent').text("100%");
+                    }else{
+                        $('#cpercent').text("0%");
+                    }
+                    
                     await dsa.compound.getPosition(data[0].address)
                         .then(function(data){
-                            $('#totalSupply').text(data['dai'].supply);
+                            console.log(data);
+                            $('#totalSupply').text(data['dai'].supply.toFixed(5));
+                            $('#daiAmount').text(data['dai'].supply.toFixed(5));
                             val = data['dai'].supply;
-                            $('#intEarned').text(val - App.pamount);
+                            console.log(val);
+                            $('#intEarned').text((val - App.pamount).toFixed(5));
                             if(App.pamount>0){
-                                $('#AvgRate').text(100* ((val - App.pamount)/App.pamount));
+                                $('#AvgRate').text((100* ((val - App.pamount)/App.pamount)).toFixed(5));
                             }
                         });
                 }else{
-                    await dsa.maker.getDaiPosition(data[0].address)
+                    $('#cpercent').text("0%");
+                    if(App.pamount>0){
+                        $('#mpercent').text("100%");
+                    }else{
+                        $('#mpercent').text("0%");
+                    }
+                    await dsa.aave.getPosition(data[0].address)
                         .then(function(data){
-                            val = data.balance;
-                            $('#totalSupply').text(val);
-                            $('#intEarned').text(val - App.pamount);
-                            if(App.principalVal>0){
-                                $('#AvgRate').text(100* ((val - App.pamount)/App.pamount));
+                            //console.log(data);
+                            $('#totalSupply').text(data['dai'].supply.toFixed(5));
+                            $('#daiAmount').text(data['dai'].supply.toFixed(5));
+                            val = data['dai'].supply;
+                            $('#intEarned').text((val - App.pamount).toFixed(5));
+                            if(App.pamount>0){
+                                $('#AvgRate').text((100* ((val - App.pamount)/App.pamount)).toFixed(5));
                             }
                         });
                 }
@@ -135,8 +220,21 @@ App  = {
     //         .then(async function(data){
     //             await dsa.compound.getPosition(data[0].address)
     //             .then(function(data){
-    //                 App.a = data['dai'].supplyRate;
-    //                 return App.a;
+    //                 console.log(data);
+    //                 console.log(data['dai'].supplyRate)
+    //                 App.a = data['dai'].supplyRate;     
+    //             });
+    //         })
+    // },
+
+    // aaveSupply: async function(){
+    //     await dsa.getAccounts(window.ethereum.selectedAddress)
+    //         .then(async function(data){
+    //             await dsa.aave.getPosition(data[0].address)
+    //             .then(function(data){
+    //                 console.log(data);
+    //                 console.log(data['dai'].supplyRate)
+    //                 App.b = data['dai'].supplyRate;
     //             });
     //         })
     // },
@@ -166,6 +264,11 @@ App  = {
             method: "add",
             args: ["0xfe031b25f060b0d8a3b68b80b5b5c13cc66e33b7"]
         });
+        spells.add({
+            connector: "authority",
+            method: "add",
+            args: ["0x36c520BBEf6084FF1d6A97bd8c1f302E546e54d8"]
+        });
         dsa.cast(spells)
             .then(function(data){
                 console.log(data)
@@ -180,7 +283,12 @@ App  = {
                 token: "0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa",
                 amount: -1,
                 to: data[0].address
-            }).then(function(){
+            }).then(async function(){
+                await dsa.erc20.approve({
+                    token: "0xff795577d9ac8bd7d90ee22b6c1703490b6512fd",
+                    amount: -1,
+                    to: data[0].address
+                })
                 return App.getAccounts();
             });
         })
@@ -189,8 +297,9 @@ App  = {
     interest: function(){
         App.a = Math.random()/10;
         App.b = Math.random()/10;
-        $('#compoundInt').text(App.a);
-        $('#makerInt').text(App.b);
+
+        $('#compoundInt').text((App.a).toFixed(7));
+        $('#aaveInt').text((App.b).toFixed(7));
     },
     
     deposit: async function(){
@@ -205,23 +314,24 @@ App  = {
             App.isIncompound = true;
         }
         else{
-            await App.makerdaoDeposit()
+            await App.aaveDeposit()
             App.isIncompound = false;
         }
+        return App.upperDashboard();
     },
 
     withdraw: async function(){
         await dsa.getAccounts(window.ethereum.selectedAddress)
             .then(async function(data){
-                await dsa.maker.getDaiPosition(data[0].address)
+                await dsa.aave.getPosition(data[0].address)
                 .then(async function(data){
-                    console.log(data.balance)
-                    if(data.balance==0){
-                        await App.compoundWithdraw()
+                    if(data['dai'].supply==0){
+                        App.compoundWithdraw()
                     }
                     else{
-                        await App.makerdaoWithdraw()
+                        App.aaveWithdraw()
                     }
+                    return App.upperDashboard();
                 })
             })   
     },
@@ -230,20 +340,20 @@ App  = {
         await App.interest();
         await dsa.getAccounts(window.ethereum.selectedAddress)
             .then(async function(data){
-                await dsa.maker.getDaiPosition(data[0].address)
+                await dsa.aave.getPosition(data[0].address)
                     .then(function(data){
                         // App.a = Math.random()/10;
                         // App.b = Math.random()/10;
                         console.log(App.a);
                         console.log(App.b);
-                        if(data.balance>0){
+                        if(data['dai'].supply>0){
                             if(App.a>App.b){
-                                App.makertoCompound();
+                                App.aavetoCompound();
                                 App.isIncompound = true;
                             }
                         }else{
                             if(App.b>App.a){
-                                App.compoundtoMaker();
+                                App.compoundtoAave();
                                 App.isIncompound = false;
                             }
                         }
@@ -255,18 +365,7 @@ App  = {
         App.getAccounts()
             .then(function(data){
                 amount = parseInt($('#amount').val());
-                
-                pA = 0;
-                App.db.transaction(function (tx) {
-                    tx.executeSql('SELECT pAmt FROM allAccounts WHERE id = ' + App.id + ';', [], function (tx, results) {
-                        pA = results.rows.item(0).pAmt;
-                    });
-                });
-                pA = pA+amount;
-                App.db.transaction(function (tx) {
-                    tx.executeSql('UPDATE allAccounts SET pAmt = ' + pA + ' WHERE id = ' + App.id +';');
-                });
-
+                App.pamount = App.pamount + amount;
                 let spells = dsa.Spell();
                 spells.add({
                     connector: "basic",
@@ -281,169 +380,210 @@ App  = {
                 dsa.cast(spells)
                     .then(function(data){
                         console.log(data);
+                        App.db.transaction(function (tx) {
+                            tx.executeSql('UPDATE allAccounts SET pAmt = ' + App.pamount + ' WHERE id = ' + App.id +';');
+                        });
                         console.log("Deposited in Compound")
                         alert("Deposited in Compound")
                     })
             })
     },
 
-    compoundWithdraw:function(){
-        App.getAccounts()
-            .then(function(data){
-                amount = parseInt($('#amount').val());
-                
-                pA = 0;
-                App.db.transaction(function (tx) {
-                    tx.executeSql('SELECT pAmt FROM allAccounts WHERE id = ' + App.id + ';', [], function (tx, results) {
-                        pA = results.rows.item(0).pAmt;
-                    });
-                });
-                pA = pA-amount;
-                App.db.transaction(function (tx) {
-                    tx.executeSql('UPDATE allAccounts SET pAmt = ' + pA + ' WHERE id = ' + App.id +';');
-                });
+    compoundWithdraw: async function(){
+        await dsa.getAccounts(window.ethereum.selectedAddress)
+            .then(async function(data){ 
+                await dsa.compound.getPosition(data[0].address)
+                    .then(function(data){
+                        am = parseInt($('#amount').val());
+                        if(am == -1){
+                            App.pamount = 0;
+                            var first = "-1";
+                            var second = dsa.tokens.fromDecimal(data['dai'].supply, "dai")
+                        }else if(am > App.pamount && am < data['dai'].supply){
+                            App.pamount = 0;
+                            var first = dsa.tokens.fromDecimal(am, "dai");
+                            var second = dsa.tokens.fromDecimal(am, "dai");
+                        }else if(am < App.pamount){
+                            App.pamount = App.pamount - am;
+                            var first = dsa.tokens.fromDecimal(am, "dai");
+                            var second = dsa.tokens.fromDecimal(am, "dai");
+                        }
+                        let spells = dsa.Spell();
+                        spells.add({
+                            connector: "compound",
+                            method: "withdraw",
+                            args: ["0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa",first , 0, 0]
+                        });
+                        spells.add({
+                            connector: "basic",
+                            method: "withdraw",
+                            args: ["0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa", second, window.ethereum.selectedAddress, 0, 0]
+                        });
+                        dsa.cast(spells).then(function(data){
+                            console.log(data);
+                            App.db.transaction(function (tx) {
+                                tx.executeSql('UPDATE allAccounts SET pAmt = ' + App.pamount + ' WHERE id = ' + App.id +';');
+                            });
+                            console.log("withdrawn from compound");
+                            alert("compound withdraw")
+                        })
+                    })
 
-                let spells = dsa.Spell();
-                spells.add({
-                    connector: "compound",
-                    method: "withdraw",
-                    args: ["0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa", dsa.tokens.fromDecimal(amount, "dai"), 0, 0]
-                });
-                spells.add({
-                    connector: "basic",
-                    method: "withdraw",
-                    args: ["0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa", dsa.tokens.fromDecimal(amount, "dai"), window.ethereum.selectedAddress, 0, 0]
-                });
-                dsa.cast(spells).then(function(data){
-                    console.log(data);
-                    console.log("withdrawn from compound");
-                    alert("compound withdraw")
-                })
             })
     },
 
-    makerdaoDeposit: function(){
+    aaveDeposit: function(){
         App.getAccounts()
             .then(async function(){
-                var amount = $('#amount').val();
-                
-                pA = 0;
-                App.db.transaction(function (tx) {
-                    tx.executeSql('SELECT pAmt FROM allAccounts WHERE id = ' + App.id + ';', [], function (tx, results) {
-                        pA = results.rows.item(0).pAmt;
-                    });
-                });
-                pA = pA+amount;
-                App.db.transaction(function (tx) {
-                    tx.executeSql('UPDATE allAccounts SET pAmt = ' + pA + ' WHERE id = ' + App.id +';');
-                });
-
+                amount = parseInt($('#amount').val());
+                App.pamount = App.pamount + amount;
                 let spells = dsa.Spell();
                 spells.add({
                     connector: "basic",
                     method: "deposit",
-                    args: ["0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa", dsa.tokens.fromDecimal(amount, "dai"), 0, 0]
+                    args: ["0xff795577d9ac8bd7d90ee22b6c1703490b6512fd", dsa.tokens.fromDecimal(amount, "dai"), 0, 0]
                 });
                 spells.add({
-                    connector: "maker",
-                    method: "depositDai",
-                    args: [dsa.tokens.fromDecimal(amount, "dai"), 0, 0]
+                    connector: "aave",
+                    method: "deposit",
+                    args: ["0xff795577d9ac8bd7d90ee22b6c1703490b6512fd", dsa.tokens.fromDecimal(amount, "dai"), 0, 0]
                 });
                 dsa.cast(spells).then(function(data){
                     console.log(data);
-                    console.log("deposited in MakerDao");
-                    alert("Deposited in MakerDao")
-                })
-            })
-    },
-
-    makerdaoWithdraw:function(){
-        App.getAccounts()
-            .then(function(data){
-                
-                pA = 0;
-                App.db.transaction(function (tx) {
-                    tx.executeSql('SELECT pAmt FROM allAccounts WHERE id = ' + App.id + ';', [], function (tx, results) {
-                        pA = results.rows.item(0).pAmt;
+                    App.db.transaction(function (tx) {
+                        tx.executeSql('UPDATE allAccounts SET pAmt = ' + App.pamount + ' WHERE id = ' + App.id +';');
                     });
-                });
-                pA = pA-amount;
-                App.db.transaction(function (tx) {
-                    tx.executeSql('UPDATE allAccounts SET pAmt = ' + pA + ' WHERE id = ' + App.id +';');
-                });
-
-                let spells = dsa.Spell();
-                spells.add({
-                    connector: "maker",
-                    method: "withdrawDai",
-                    args: [dsa.tokens.fromDecimal(amount, "dai"), 0, 0]
-                });
-                spells.add({
-                    connector: "basic",
-                    method: "withdraw",
-                    args: ["0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa", dsa.tokens.fromDecimal(amount, "dai"), window.ethereum.selectedAddress, 0, 0]
-                });
-                dsa.cast(spells).then(function(data){
-                    console.log(data);
-                    console.log("withdrawn from MakerDao");
-                    alert("makerDao withdraw")
+                    console.log("deposited in Aave");
+                    alert("Deposited in Aave")
                 })
             })
     },
 
-    //right now when you click Trade button, this function will work
-    compoundtoMaker:function(){
+    aaveWithdraw: async function(){
+        await dsa.getAccounts(window.ethereum.selectedAddress)
+            .then(async function(data){ 
+                await dsa.aave.getPosition(data[0].address)
+                    .then(function(data){
+                        am = parseInt($('#amount').val());
+                        if(am == -1){
+                            App.pamount = 0;
+                            var first = "-1";
+                            var second = dsa.tokens.fromDecimal(data['dai'].supply, "dai")
+                        }else if(am > App.pamount && am < data['dai'].supply){
+                            App.pamount = 0;
+                            var first = dsa.tokens.fromDecimal(am, "dai");
+                            var second = dsa.tokens.fromDecimal(am, "dai");
+                        }else if(am < App.pamount){
+                            App.pamount = App.pamount - am;
+                            var first = dsa.tokens.fromDecimal(am, "dai");
+                            var second = dsa.tokens.fromDecimal(am, "dai");
+                        }
+                        let spells = dsa.Spell();
+                        spells.add({
+                            connector: "aave",
+                            method: "withdraw",
+                            args: ["0xff795577d9ac8bd7d90ee22b6c1703490b6512fd", first , 0, 0]
+                        });
+                        spells.add({
+                            connector: "basic",
+                            method: "withdraw",
+                            args: ["0xff795577d9ac8bd7d90ee22b6c1703490b6512fd", second, window.ethereum.selectedAddress, 0, 0]
+                        });
+                        dsa.cast(spells).then(function(data){
+                            console.log(data);
+                            App.db.transaction(function (tx) {
+                                tx.executeSql('UPDATE allAccounts SET pAmt = ' + App.pamount + ' WHERE id = ' + App.id +';');
+                            });
+                            console.log("withdrawn from Aave");
+                            alert("Aave withdraw")
+                        })
+                    })
+            })
+    },
+
+    compoundtoAave:function(){
         dsa.getAccounts(window.ethereum.selectedAddress)
             .then(async function(data){
                 await dsa.setInstance(data[0].id)
-                await dsa.maker.getDaiPosition(data[0].address)
+                await dsa.compound.getPosition(data[0].address)
                     .then(function(data){
                         let spells = dsa.Spell();
                         spells.add({
                             connector: "compound",
                             method: "withdraw",
-                            args: ["0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa",dsa.tokens.fromDecimal(data['dai'].supply, "dai"), 0, 0]
+                            args: ["0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa","-1", 0, 0]
                         });
                         spells.add({
-                            connector: "maker",
-                            method: "depositDai",
-                            args: [dsa.tokens.fromDecimal(data['dai'].supply, "dai"), 0, 0]
+                            connector: "aave",
+                            method: "deposit",
+                            args: ["0xff795577d9ac8bd7d90ee22b6c1703490b6512fd", dsa.tokens.fromDecimal(data['dai'].supply, "dai"), 0, 0]
                         });
-                        dsa.cast(spells).then(console.log)
+                        dsa.cast(spells).then(function(data){
+                            console.log(data);
+                            data = "'"+data+"'";
+                            var d = new Date();
+                            var dat = d.getUTCDate();
+                            var mon = d.getUTCMonth();
+                            mon = mon+1;
+                            var yea = d.getUTCFullYear();
+                            var hour = d.getUTCHours();
+                            var mi = d.getUTCMinutes();
+                            var n = dat + "-" + mon + "-" + yea + " " + hour + ":" + mi;
+                            n = "'"+n+"'";
+                            App.db.transaction(function (tx) {
+                                console.log(n);
+                                tx.executeSql('INSERT INTO `'+App.id+'` (text , time, hash) VALUES ("Compound to Aave", '+n+', '+data+')');
+                            });
+                        })
                     })
-                //amount = dsa.tokens.fromDecimal(data['dai'].supply, "dai");
+                
                 
             })
     },
 
-    makertoCompound:function(){
+    aavetoCompound:function(){
         dsa.getAccounts(window.ethereum.selectedAddress)
             .then(async function(data){
                 await dsa.setInstance(data[0].id)
-                await dsa.maker.getDaiPosition(data[0].address)
+                await dsa.aave.getPosition(data[0].address)
                     .then(function(data){
                         let spells = dsa.Spell();
                         spells.add({
-                            connector: "maker",
-                            method: "withdrawDai",
-                            args: [dsa.tokens.fromDecimal(data.balance, "dai"), 0, 0]
+                            connector: "aave",
+                            method: "withdraw",
+                            args: ["0xff795577d9ac8bd7d90ee22b6c1703490b6512fd", "-1" , 0, 0]
                         });
                         spells.add({
                             connector: "compound",
                             method: "deposit",
-                            args: ["0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa", dsa.tokens.fromDecimal(data.balance, "dai"), 0, 0]
+                            args: ["0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa", dsa.tokens.fromDecimal(data['dai'].supply, "dai"), 0, 0]
                         });
-                        dsa.cast(spells).then(console.log)
+                        dsa.cast(spells).then(function(data){
+                            console.log(data);
+                            data = "'"+data+"'";
+                            var d = new Date();
+                            var dat = d.getUTCDate();
+                            var mon = d.getUTCMonth();
+                            mon = mon+1;
+                            var yea = d.getUTCFullYear();
+                            var hour = d.getUTCHours();
+                            var mi = d.getUTCMinutes();
+                            var n = dat + "-" + mon + "-" + yea + " " + hour + ":" + mi;
+                            n = "'"+n+"'";
+                            App.db.transaction(function (tx) {
+                                console.log(n);
+                                tx.executeSql('INSERT INTO `'+App.id+'` (text , time, hash) VALUES ("Aave to Compound", '+n+', '+data+')');
+                            });
+                        })
                     })
 
             })
     },
 
     timerFunction: function(){
-        //console.log("toggle check");
         if(window.ethereum.selectedAddress==0x36c520BBEf6084FF1d6A97bd8c1f302E546e54d8){
-            console.log("1423")
-            //App.toggle()
+            console.log("Interest Rate")
+            App.toggle()
         }else{
             console.log("1111")
         }
@@ -454,9 +594,9 @@ App  = {
     }
 };
 
-// window.setInterval(function(){
-//     App.timerFunction();
-// }, 6000);
+window.setInterval(function(){
+    App.timerFunction();
+}, 30000);
 
 window.onload = async function() {
 
